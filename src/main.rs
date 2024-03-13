@@ -1,19 +1,19 @@
 use std::net::TcpListener;
 
-use zero_to_prod_example::run;
+use sqlx::PgPool;
+use zero_to_prod_example::{configuration::get_configuration, startup::run};
 
 #[tokio::main] // <- this is the same as tokio::main
 async fn main() -> Result<(), std::io::Error> {
-    let listener = TcpListener::bind("127.0.0.1:0").expect("Failed to bind random port");
-    let port = listener.local_addr().unwrap().port();
+    // Panic if we can't read configuration
+    let configuration = get_configuration().expect("Failed to read configuration.");
+    let connection_pool = PgPool::connect(&configuration.database.connection_string())
+        .await
+        .expect("Failed to connect to Postgres.");
 
-    let server = run(listener).expect("Failed to bind address");
-    // We launch the server in a background task
-    // tokio::spawn returns a handle to the spawned future, but we don't need it here
+    let address = format!("127.0.0.1:{}", configuration.application_port);
 
-    println!("Server running on: http://127.0.0.1:{}", port);
-    server.await?;
-
-    println!("\n Server stopped");
-    Ok(())
+    let listener = TcpListener::bind(&address).expect("Failed to bind random port");
+    println!("Server running on: http://{}", address);
+    run(listener, connection_pool)?.await
 }
