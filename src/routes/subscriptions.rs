@@ -15,7 +15,7 @@ pub struct FormData {
 #[tracing::instrument(
 name = "Adding a new subscriber", skip(data, db_pool),
 fields(
-request_id = %Uuid::new_v4(), subscriber_email = %data.email, subscriber_name = %data.name
+subscriber_email = %data.email, subscriber_name = %data.name
 ) )]
 pub async fn subscribe(data: web::Json<FormData>, db_pool: web::Data<PgPool>) -> impl Responder {
     match validate_form_data(data) {
