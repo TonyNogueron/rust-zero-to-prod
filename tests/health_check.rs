@@ -130,7 +130,7 @@ async fn subscribe_returns_a_200_for_valid_form_data() {
 }
 
 #[tokio::test]
-async fn subscribe_returns_a_400_code_when_data_is_missing() {
+async fn subscribe_returns_a_400_code_when_data_is_invalid() {
     // Arrange
     let app = spawn_app().await;
     let client = reqwest::Client::new();
@@ -180,9 +180,10 @@ async fn subscribe_returns_a_400_code_when_data_is_missing() {
             .expect("Failed to execute request.");
         // Assert
         assert_eq!(
+            // Not 200 anymore!
             400,
             response.status().as_u16(),
-            "The API did not fail with 400 Bad Request when the payload was {}.",
+            "The API did not return a 400 Bad Request when the payload was {}.",
             error_message
         );
     }
