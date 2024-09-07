@@ -2,6 +2,7 @@
 // from using the #[test] attribute.
 
 use std::net::TcpListener;
+use zero_to_prod_example::email_client::EmailClient;
 
 use once_cell::sync::Lazy;
 use sqlx::{Connection, Executor, PgConnection, PgPool};
@@ -69,7 +70,15 @@ async fn spawn_app() -> TestApp {
     configuration.database.database_name = Uuid::new_v4().to_string();
     let connection_pool = configure_database(&configuration.database).await;
 
-    let server = run(listener, connection_pool.clone()).expect("Failed to bind address");
+    // Build a new email client
+    let sender_email = configuration
+        .email_client
+        .sender()
+        .expect("Invalid sender email address.");
+    let email_client = EmailClient::new(configuration.email_client.base_url, sender_email);
+
+    let server =
+        run(listener, connection_pool.clone(), email_client).expect("Failed to bind address");
     let _ = tokio::spawn(server);
     // We launch the server in a background task
     // tokio::spawn returns a handle to the spawned future, but we don't need it here

@@ -1,4 +1,5 @@
 use std::net::TcpListener;
+use zero_to_prod_example::email_client::EmailClient;
 
 use sqlx::postgres::PgPoolOptions;
 use zero_to_prod_example::{
@@ -20,6 +21,13 @@ async fn main() -> Result<(), std::io::Error> {
     let configuration = get_configuration().expect("Failed to read configuration.");
     let connection_pool = PgPoolOptions::new().connect_lazy_with(configuration.database.with_db());
 
+    // Build an `EmailClient` using `configuration`
+    let sender_email = configuration
+        .email_client
+        .sender()
+        .expect("Invalid sender email address.");
+    let email_client = EmailClient::new(configuration.email_client.base_url, sender_email);
+
     let address = format!(
         "{}:{}",
         configuration.application.host, configuration.application.port
@@ -27,5 +35,6 @@ async fn main() -> Result<(), std::io::Error> {
 
     let listener = TcpListener::bind(&address).expect("Failed to bind random port");
     println!("Server running on: http://{}", address);
-    run(listener, connection_pool)?.await
+    run(listener, connection_pool, email_client)?.await;
+    Ok(())
 }
